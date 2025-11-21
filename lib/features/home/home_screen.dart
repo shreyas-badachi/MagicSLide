@@ -4,6 +4,9 @@ import 'package:magicslide/core/services/magicslides_service.dart';
 import 'package:magicslide/features/generate/view/generate_result_screen.dart';
 import 'package:magicslide/core/services/supabase_service.dart';
 import 'home_viewmodel.dart';
+import 'package:dropdown_button2/dropdown_button2.dart';
+import 'package:magicslide/core/models/constants/constants.dart';
+
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -156,11 +159,14 @@ class HomeScreen extends StatelessWidget {
                           const SizedBox(height: 20),
                           _glassDropdown(
                             label: 'Language',
-                            value: vm.language,
-                            items: const ['en', 'hi'],
-                            onChanged: (v) => vm.language = v!,
+                            value: vm.languageLabel,
+                            items: vm.languages.map((e) => e['label']!).toList(),
+                            onChanged: (selectedLabel) {
+                              vm.language = vm.valueForLabel(selectedLabel);
+                              vm.notifyListeners();
+                            },
                           ),
-                          const SizedBox(height: 20),
+                        const SizedBox(height: 20),
                           _glassDropdown(
                             label: 'Model',
                             value: vm.model,
@@ -198,11 +204,22 @@ class HomeScreen extends StatelessWidget {
                           ),
 
                           const SizedBox(height: 32),
-                          _switchTile('AI Images', vm.aiImages, (v) => vm.aiImages = v),
-                          _switchTile('Image on Each Slide', vm.imageEach, (v) => vm.imageEach = v),
-                          _switchTile('Google Images', vm.googleImage, (v) => vm.googleImage = v),
-                          _switchTile('Google Text', vm.googleText, (v) => vm.googleText = v),
-
+                          _switchTile('AI Images', vm.aiImages, (v) {
+                            vm.aiImages = v;
+                            vm.notifyListeners();
+                          }),
+                          _switchTile('Image on Each Slide', vm.imageEach, (v) {
+                            vm.imageEach = v;
+                            vm.notifyListeners();
+                          }),
+                          _switchTile('Google Images', vm.googleImage, (v) {
+                            vm.googleImage = v;
+                            vm.notifyListeners();
+                          }),
+                          _switchTile('Google Text', vm.googleText, (v) {
+                            vm.googleText = v;
+                            vm.notifyListeners();
+                          }),
                           const SizedBox(height: 40),
 
                           // Pure black generate button
@@ -218,22 +235,21 @@ class HomeScreen extends StatelessWidget {
                                     );
                                     return;
                                   }
-
                                   final user = SupabaseService.client.auth.currentUser;
                                   final email = user?.email ?? 'unknown@example.com';
                                   final request = vm.buildRequest(email);
-
                                   final res = await MagicSlidesService().generate(request);
                                   if (!context.mounted) return;
-
                                   if (res.success && res.data?['url'] != null) {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(builder: (_) => GenerateResultScreen(fileUrl: res.data!['url'])),
                                     );
                                   } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text(res.message ?? 'Failed to generate')),
+                                    showFloatingSnackBar(
+                                      context,
+                                      message: "🔑 Please provide your Access Key to generate 🙂.",
+                                      backgroundColor: const Color(0xFF111827),
                                     );
                                   }
                                 },
@@ -310,7 +326,6 @@ class HomeScreen extends StatelessWidget {
         _label(label),
         const SizedBox(height: 8),
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.78),
             borderRadius: BorderRadius.circular(16),
@@ -319,31 +334,134 @@ class HomeScreen extends StatelessWidget {
               BoxShadow(color: Colors.black.withOpacity(0.08), blurRadius: 15, offset: const Offset(0, 6)),
             ],
           ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              value: safeValue,
-              isExpanded: true,
-              dropdownColor: Colors.white,
-              style: const TextStyle(color: Colors.black87, fontSize: 15),
-              icon: const Icon(Icons.keyboard_arrow_down, color: Colors.black54),
-              items: items.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
-              onChanged: (v) => v != null ? onChanged(v) : null,
+          child:DropdownButtonFormField2<String>(
+            value: safeValue,
+            isExpanded: true,
+            decoration: InputDecoration(
+              labelText: "Select",
+              filled: true,
+              fillColor: Colors.white.withOpacity(0.78),   // background
+              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.black.withOpacity(0.12),
+                  width: 1.2,
+                ),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: Colors.black.withOpacity(0.12),
+                  width: 1.2,
+                ),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide(
+                  color: const Color(0xFF3B82F6),  // blue focus color
+                  width: 1.4,
+                ),
+              ),
             ),
-          ),
+            items: items.map((e) {
+              return DropdownMenuItem<String>(
+                value: e,
+                child: Text(
+                  e,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    fontSize: 16,
+                    color: Color(0xFF1F2937),
+                  ),
+                ),
+              );
+            }).toList(),
+            onChanged: (val) {
+              if (val != null) onChanged(val);
+            },
+            dropdownStyleData: DropdownStyleData(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+                boxShadow: const [
+                  BoxShadow(
+                    color: Colors.black12,
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
+                  ),
+                ],
+              ),
+            ),
+            iconStyleData: const IconStyleData(
+              icon: Icon(Icons.arrow_drop_down_rounded, color: Color(0xFF3B82F6)),
+            ),
+            style: const TextStyle(
+              fontSize: 16,
+              color: Color(0xFF1F2937),
+              fontFamily: 'Inter',
+            ),
+          )
+
+
         ),
       ],
     );
   }
 
   Widget _switchTile(String title, bool value, Function(bool) onChanged) {
-    return SwitchListTile(
-      title: Text(title, style: const TextStyle(color: Colors.black87, fontSize: 15)),
-      value: value,
-      onChanged: onChanged,
-      activeColor: Colors.black,
-      activeTrackColor: Colors.black26,
-      inactiveThumbColor: Colors.black38,
-      inactiveTrackColor: Colors.black12,
+    return InkWell(
+      onTap: () {
+        onChanged(!value);   // tap on tile toggles the switch
+      },
+      child: SwitchListTile(
+        title: Text(title, style: const TextStyle(color: Colors.black87, fontSize: 15)),
+        value: value,
+        onChanged: (v) => onChanged(v),   // direct toggle also works
+        activeColor: Colors.black,
+        activeTrackColor: Colors.blue,
+        inactiveThumbColor: Colors.black38,
+        inactiveTrackColor: Colors.black12,
+        controlAffinity: ListTileControlAffinity.trailing,
+      ),
     );
   }
+  void showFloatingSnackBar(BuildContext context, {
+    required String message,
+    String? actionLabel,
+    VoidCallback? onAction,
+    Duration duration = const Duration(seconds: 4),
+    Color backgroundColor = const Color(0xFF111827), // near-black
+    double borderRadius = 12,
+    EdgeInsets margin = const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+  }) {
+    final snack = SnackBar(
+      behavior: SnackBarBehavior.floating,
+      elevation: 12,
+      backgroundColor: backgroundColor,
+      duration: duration,
+      margin: margin,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(borderRadius)),
+      content: Row(
+        children: [
+          const Text('✨', style: TextStyle(fontSize: 20)), // emoji
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
+      action: (actionLabel != null && onAction != null)
+          ? SnackBarAction(label: actionLabel, onPressed: onAction, textColor: Colors.cyanAccent)
+          : null,
+    );
+
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(snack);
+  }
+
 }
