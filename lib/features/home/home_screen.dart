@@ -1,4 +1,3 @@
-// lib/features/home/view/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:magicslide/core/services/magicslides_service.dart';

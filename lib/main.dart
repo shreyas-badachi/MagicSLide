@@ -1,14 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:magicslide/core/services/supabase_service.dart';
 import 'package:magicslide/features/auth/view/login_screen.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'features/home/home_screen.dart';
 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await SupabaseService.init();
   await dotenv.load(fileName: ".env");
+
+  await SupabaseService.init();
   runApp(const MyApp());
 }
 

@@ -1,4 +1,3 @@
-// lib/features/generate/view/generate_result_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:pdfx/pdfx.dart';
